@@ -1,5 +1,7 @@
 ---
-inclusion: manual
+inclusion: auto
+name: business
+description: Domain rules and entity definitions
 ---
 
 

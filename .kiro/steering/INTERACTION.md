@@ -1,5 +1,7 @@
 ---
-inclusion: manual
+inclusion: auto
+name: interaction
+description: UX goals and interaction patterns
 ---
 
 
@@ -9,6 +11,17 @@ inclusion: manual
    Add user interaction patterns (use cases, workflows, flows) to this file.
    Keep business rules in BUSINESS.md instead.
 ------------------------------------------------------------------------------------->
+
+## Board Navigation
+
+The app has three screens:
+
+- **Welcome screen** — shown on first load (or when no file is loaded). Prompts the user to create a new file or open an existing one.
+- **Dashboard** — shown after a file is loaded. Lists all boards in the file. The user can open any board from here.
+- **Board view** — shows a single board with its columns and cards.
+
+Boards can be opened in separate browser tabs.
+
 
 ## Basic Principles
 
