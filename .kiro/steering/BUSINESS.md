@@ -23,11 +23,11 @@ Board → Column → Card
 Every entity has a stable, unique ID of the form `<realm>#<hex>`, where:
 
 - `<realm>` is the entity type: `board`, `column`, or `card`.
-- `<hex>` is a randomly generated 6-digit hexadecimal number (e.g. `board#3a2f10`).
+- `<hex>` is a zero-padded 6-digit lowercase hexadecimal encoding of a per-realm monotonically incrementing counter (e.g. `board#00003a`).
 
 Rules:
 - IDs are unique within their realm (e.g. no two boards share the same hex part).
-- IDs are generated randomly. Before use, the hex part must be checked against all existing IDs in the same realm to rule out collisions. Regenerate on collision.
+- IDs are generated from a per-realm counter that starts at 0 and increments by 1 on each new entity. The next counter value is encoded as a zero-padded 6-digit lowercase hexadecimal string.
 - IDs are assigned at creation and never change.
 
 
@@ -38,7 +38,7 @@ Rules:
 
 Required fields:
 - `id`: a `card#<hex>` identifier
-- `name`: non-empty string, max 255 characters
+- `name`: non-empty string, max 2048 characters
 - `createdAt`: datetime, set once at creation, never modified
 - `lastModifiedAt`: datetime, updated on every change to the card
 
@@ -52,7 +52,7 @@ Optional fields:
 
 Required fields:
 - `id`: a `column#<hex>` identifier
-- `name`: non-empty string, max 255 characters
+- `name`: non-empty string, max 2048 characters
 - `cards`: ordered list of cards (may be empty)
 
 
@@ -60,7 +60,7 @@ Required fields:
 
 Required fields:
 - `id`: a `board#<hex>` identifier
-- `name`: non-empty string, max 255 characters
+- `name`: non-empty string, max 2048 characters
 - `createdAt`: datetime, set once at creation, never modified
 - `lastModifiedAt`: datetime, updated on every change to the board or any of its columns or cards
 - `columns`: ordered list of columns (may be empty)

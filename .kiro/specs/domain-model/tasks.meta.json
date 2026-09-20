@@ -1,0 +1,377 @@
+{
+  "pbtResults": {
+    "13.2 Write property tests for `copyCard` (Property 20)": {
+      "status": "passed",
+      "lastRunTimestamp": 1789899999685
+    }
+  },
+  "executionHistory": {
+    "1.1 Install `vitest` and `fast-check` as dev dependencies": [
+      {
+        "executionId": "0ca6c106-46bc-4b9e-b4a2-b7bc21df3b95",
+        "chatSessionId": "sess_57520c12-3cc7-44b0-8493-485c1cfcf386",
+        "timestamp": 1789892389312
+      },
+      {
+        "executionId": "0ca6c106-46bc-4b9e-b4a2-b7bc21df3b95",
+        "chatSessionId": "sess_57520c12-3cc7-44b0-8493-485c1cfcf386",
+        "timestamp": 1789892515847
+      }
+    ],
+    "1.2 Create `vitest.config.ts` at the project root": [
+      {
+        "executionId": "0ca6c106-46bc-4b9e-b4a2-b7bc21df3b95",
+        "chatSessionId": "sess_57520c12-3cc7-44b0-8493-485c1cfcf386",
+        "timestamp": 1789892391954
+      },
+      {
+        "executionId": "0ca6c106-46bc-4b9e-b4a2-b7bc21df3b95",
+        "chatSessionId": "sess_57520c12-3cc7-44b0-8493-485c1cfcf386",
+        "timestamp": 1789892518589
+      }
+    ],
+    "1.3 Add ESLint `no-restricted-imports` rules for domain purity": [
+      {
+        "executionId": "0ca6c106-46bc-4b9e-b4a2-b7bc21df3b95",
+        "chatSessionId": "sess_57520c12-3cc7-44b0-8493-485c1cfcf386",
+        "timestamp": 1789892394431
+      },
+      {
+        "executionId": "0ca6c106-46bc-4b9e-b4a2-b7bc21df3b95",
+        "chatSessionId": "sess_57520c12-3cc7-44b0-8493-485c1cfcf386",
+        "timestamp": 1789892521385
+      }
+    ],
+    "1. Project setup: install Vitest and fast-check, configure Vitest, add ESLint domain-purity rules": [
+      {
+        "executionId": "0ca6c106-46bc-4b9e-b4a2-b7bc21df3b95",
+        "chatSessionId": "sess_57520c12-3cc7-44b0-8493-485c1cfcf386",
+        "timestamp": 1789892521434
+      }
+    ],
+    "2.1 Implement all fast-check arbitrary generators defined in the design": [
+      {
+        "executionId": "d1ee7d88-cfe4-4b73-b865-2babba6df503",
+        "chatSessionId": "sess_5b317f60-34fc-484a-894a-41ae4013977c",
+        "timestamp": 1789892809162
+      },
+      {
+        "executionId": "eb05a7bd-e3e6-4c64-84c5-5ff75ba2ebf3",
+        "chatSessionId": "sess_42628c4f-9fe5-403e-8aad-f8052b591764",
+        "timestamp": 1789892987080
+      },
+      {
+        "executionId": "eb05a7bd-e3e6-4c64-84c5-5ff75ba2ebf3",
+        "chatSessionId": "sess_42628c4f-9fe5-403e-8aad-f8052b591764",
+        "timestamp": 1789893045259
+      }
+    ],
+    "2. Shared test generators (`src/domain/__tests__/generators.ts`)": [
+      {
+        "executionId": "eb05a7bd-e3e6-4c64-84c5-5ff75ba2ebf3",
+        "chatSessionId": "sess_42628c4f-9fe5-403e-8aad-f8052b591764",
+        "timestamp": 1789893045312
+      }
+    ],
+    "3.1 Implement the `Result<T>` discriminated union and helper functions": [
+      {
+        "executionId": "22f79337-b283-417e-8df8-f8311634711e",
+        "chatSessionId": "sess_8d5a7103-7961-43ea-a071-c35563f8c840",
+        "timestamp": 1789893075351
+      },
+      {
+        "executionId": "22f79337-b283-417e-8df8-f8311634711e",
+        "chatSessionId": "sess_8d5a7103-7961-43ea-a071-c35563f8c840",
+        "timestamp": 1789893098554
+      }
+    ],
+    "3. `Result` type (`src/domain/Result.ts`)": [
+      {
+        "executionId": "22f79337-b283-417e-8df8-f8311634711e",
+        "chatSessionId": "sess_8d5a7103-7961-43ea-a071-c35563f8c840",
+        "timestamp": 1789893098604
+      }
+    ],
+    "4.1 Implement `EntityId` class and `makeEntityId` factory": [
+      {
+        "executionId": "53f74c37-b3ed-46b2-8869-b5aa3d62353d",
+        "chatSessionId": "sess_bc4d2845-b564-4ad9-b2a1-a6720195fa05",
+        "timestamp": 1789893254813
+      },
+      {
+        "executionId": "53f74c37-b3ed-46b2-8869-b5aa3d62353d",
+        "chatSessionId": "sess_bc4d2845-b564-4ad9-b2a1-a6720195fa05",
+        "timestamp": 1789893336441
+      }
+    ],
+    "4. `EntityId` value object (`src/domain/EntityId.ts`)": [
+      {
+        "executionId": "53f74c37-b3ed-46b2-8869-b5aa3d62353d",
+        "chatSessionId": "sess_bc4d2845-b564-4ad9-b2a1-a6720195fa05",
+        "timestamp": 1789893336508
+      }
+    ],
+    "4.2 Write property tests for `EntityId` (Properties 1–4)": [
+      {
+        "executionId": "28360bcb-7364-4776-b9fa-fa7ea5973d9c",
+        "chatSessionId": "sess_da41eefc-665f-4092-85c2-433238fc1cde",
+        "timestamp": 1789893436683
+      }
+    ],
+    "5.4 Write property tests for all three name value objects (Properties 5–7)": [
+      {
+        "executionId": "f9723e6b-8398-4988-a3eb-1f7616728ad7",
+        "chatSessionId": "sess_26df9dd8-20e8-4436-9813-feb9083096e8",
+        "timestamp": 1789895505909
+      },
+      {
+        "executionId": "f9723e6b-8398-4988-a3eb-1f7616728ad7",
+        "chatSessionId": "sess_26df9dd8-20e8-4436-9813-feb9083096e8",
+        "timestamp": 1789896727893
+      }
+    ],
+    "6.1 Implement `CardDescription` class (`src/domain/CardDescription.ts`)": [
+      {
+        "executionId": "696cb1b1-5387-4851-9b9f-7bad857bfc78",
+        "chatSessionId": "sess_42956f01-f5fd-43f6-8899-c86c7cc4de9c",
+        "timestamp": 1789896809650
+      },
+      {
+        "executionId": "696cb1b1-5387-4851-9b9f-7bad857bfc78",
+        "chatSessionId": "sess_42956f01-f5fd-43f6-8899-c86c7cc4de9c",
+        "timestamp": 1789896874038
+      }
+    ],
+    "6.2 Implement `BoardDescription` class (`src/domain/BoardDescription.ts`)": [
+      {
+        "executionId": "696cb1b1-5387-4851-9b9f-7bad857bfc78",
+        "chatSessionId": "sess_42956f01-f5fd-43f6-8899-c86c7cc4de9c",
+        "timestamp": 1789896810752
+      },
+      {
+        "executionId": "696cb1b1-5387-4851-9b9f-7bad857bfc78",
+        "chatSessionId": "sess_42956f01-f5fd-43f6-8899-c86c7cc4de9c",
+        "timestamp": 1789896874962
+      }
+    ],
+    "6. Description value objects: `CardDescription`, `BoardDescription`": [
+      {
+        "executionId": "696cb1b1-5387-4851-9b9f-7bad857bfc78",
+        "chatSessionId": "sess_42956f01-f5fd-43f6-8899-c86c7cc4de9c",
+        "timestamp": 1789896875036
+      }
+    ],
+    "6.3 Write property tests for description value objects (Property 8)": [
+      {
+        "executionId": "373ed0a7-4005-4e22-8603-5ff18ad0542f",
+        "chatSessionId": "sess_795cc815-d772-4fa5-8312-53adb3593522",
+        "timestamp": 1789896912449
+      },
+      {
+        "executionId": "373ed0a7-4005-4e22-8603-5ff18ad0542f",
+        "chatSessionId": "sess_795cc815-d772-4fa5-8312-53adb3593522",
+        "timestamp": 1789896995698
+      }
+    ],
+    "7.1 Implement `CardCategory` class": [
+      {
+        "executionId": "198c0f34-7277-4f05-a35e-5e39ebb42bfd",
+        "chatSessionId": "sess_ad23afeb-fcde-4e9f-b806-66bd5f1d165b",
+        "timestamp": 1789897072567
+      },
+      {
+        "executionId": "198c0f34-7277-4f05-a35e-5e39ebb42bfd",
+        "chatSessionId": "sess_ad23afeb-fcde-4e9f-b806-66bd5f1d165b",
+        "timestamp": 1789897273645
+      }
+    ],
+    "7.2 Write property tests for `CardCategory` (Property 9)": [
+      {
+        "executionId": "a106272d-f8de-437e-bfbd-f89be210bf78",
+        "chatSessionId": "sess_79b3cd6a-85e0-4666-a317-1947ec2dbb5e",
+        "timestamp": 1789897306922
+      },
+      {
+        "executionId": "a106272d-f8de-437e-bfbd-f89be210bf78",
+        "chatSessionId": "sess_79b3cd6a-85e0-4666-a317-1947ec2dbb5e",
+        "timestamp": 1789897394930
+      }
+    ],
+    "7. `CardCategory` value object (`src/domain/CardCategory.ts`)": [
+      {
+        "executionId": "a106272d-f8de-437e-bfbd-f89be210bf78",
+        "chatSessionId": "sess_79b3cd6a-85e0-4666-a317-1947ec2dbb5e",
+        "timestamp": 1789897395004
+      }
+    ],
+    "8.1 Implement `DueDate` class": [
+      {
+        "executionId": "91361323-b17b-48bc-88cc-0dd2615c79fb",
+        "chatSessionId": "sess_6556260c-62f0-430a-88ff-f1c6e60b794f",
+        "timestamp": 1789897494402
+      },
+      {
+        "executionId": "91361323-b17b-48bc-88cc-0dd2615c79fb",
+        "chatSessionId": "sess_6556260c-62f0-430a-88ff-f1c6e60b794f",
+        "timestamp": 1789897545031
+      }
+    ],
+    "8.2 Write property tests for `DueDate` (Properties 10–11)": [
+      {
+        "executionId": "91361323-b17b-48bc-88cc-0dd2615c79fb",
+        "chatSessionId": "sess_6556260c-62f0-430a-88ff-f1c6e60b794f",
+        "timestamp": 1789897547897
+      },
+      {
+        "executionId": "91361323-b17b-48bc-88cc-0dd2615c79fb",
+        "chatSessionId": "sess_6556260c-62f0-430a-88ff-f1c6e60b794f",
+        "timestamp": 1789897718252
+      }
+    ],
+    "8. `DueDate` value object (`src/domain/DueDate.ts`)": [
+      {
+        "executionId": "91361323-b17b-48bc-88cc-0dd2615c79fb",
+        "chatSessionId": "sess_6556260c-62f0-430a-88ff-f1c6e60b794f",
+        "timestamp": 1789897718332
+      }
+    ],
+    "9. Checkpoint — ensure all value object tests pass": [
+      {
+        "executionId": "f6c3140a-7dd0-46f6-94e0-6546952e6e0a",
+        "chatSessionId": "sess_8305858a-c997-4872-a272-689ec2481e92",
+        "timestamp": 1789897829865
+      },
+      {
+        "executionId": "f6c3140a-7dd0-46f6-94e0-6546952e6e0a",
+        "chatSessionId": "sess_8305858a-c997-4872-a272-689ec2481e92",
+        "timestamp": 1789897861599
+      }
+    ],
+    "10. `Card` entity (`src/domain/Card.ts`)": [
+      {
+        "executionId": "abcb3924-002e-4066-8adf-72c7cef581da",
+        "chatSessionId": "sess_23b1b38c-2113-4384-9b60-99aaefa601ba",
+        "timestamp": 1789897954479
+      },
+      {
+        "executionId": "387b1edc-fbf2-4c5f-bed0-64e9218bbf37",
+        "chatSessionId": "sess_2f0a5f8f-c4ae-44e3-8609-40b57cddb59b",
+        "timestamp": 1789898345987
+      },
+      {
+        "executionId": "387b1edc-fbf2-4c5f-bed0-64e9218bbf37",
+        "chatSessionId": "sess_2f0a5f8f-c4ae-44e3-8609-40b57cddb59b",
+        "timestamp": 1789898502623
+      }
+    ],
+    "11.1 Implement `Column` class": [
+      {
+        "executionId": "1b5c8852-b56b-44a4-af7f-8232172e0074",
+        "chatSessionId": "sess_623beefe-4b6e-4a65-bec6-7982b63878f3",
+        "timestamp": 1789898606677
+      },
+      {
+        "executionId": "1b5c8852-b56b-44a4-af7f-8232172e0074",
+        "chatSessionId": "sess_623beefe-4b6e-4a65-bec6-7982b63878f3",
+        "timestamp": 1789898778434
+      }
+    ],
+    "11.2 Write property tests for `Column` (Properties 14–16)": [
+      {
+        "executionId": "1b5c8852-b56b-44a4-af7f-8232172e0074",
+        "chatSessionId": "sess_623beefe-4b6e-4a65-bec6-7982b63878f3",
+        "timestamp": 1789898782321
+      },
+      {
+        "executionId": "1b5c8852-b56b-44a4-af7f-8232172e0074",
+        "chatSessionId": "sess_623beefe-4b6e-4a65-bec6-7982b63878f3",
+        "timestamp": 1789898942538
+      }
+    ],
+    "11. `Column` entity (`src/domain/Column.ts`)": [
+      {
+        "executionId": "1b5c8852-b56b-44a4-af7f-8232172e0074",
+        "chatSessionId": "sess_623beefe-4b6e-4a65-bec6-7982b63878f3",
+        "timestamp": 1789898942625
+      }
+    ],
+    "12. `Board` entity (`src/domain/Board.ts`)": [
+      {
+        "executionId": "001252cf-e0d2-43f6-9754-9d1d77ff6cda",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789899496905
+      },
+      {
+        "executionId": "001252cf-e0d2-43f6-9754-9d1d77ff6cda",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789899839182
+      }
+    ],
+    "12.1 Implement `Board` class": [
+      {
+        "executionId": "dd83c9ed-5af9-411e-96c9-05006e0208f2",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789899924837
+      }
+    ],
+    "12.2 Write property tests for `Board` (Properties 13, 17–19)": [
+      {
+        "executionId": "dd83c9ed-5af9-411e-96c9-05006e0208f2",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789899925760
+      }
+    ],
+    "13. `copyCard` domain operation (`src/domain/copyCard.ts`)": [
+      {
+        "executionId": "dd83c9ed-5af9-411e-96c9-05006e0208f2",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789899929726
+      },
+      {
+        "executionId": "dd83c9ed-5af9-411e-96c9-05006e0208f2",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789900023138
+      }
+    ],
+    "13.2 Write property tests for `copyCard` (Property 20)": [
+      {
+        "executionId": "dd83c9ed-5af9-411e-96c9-05006e0208f2",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789900022063
+      }
+    ],
+    "13.1 Implement `copyCard` function": [
+      {
+        "executionId": "dd83c9ed-5af9-411e-96c9-05006e0208f2",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789900023087
+      }
+    ],
+    "14. Barrel export (`src/domain/index.ts`)": [
+      {
+        "executionId": "f58c191a-9ee9-4807-90e8-0df517721411",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789900623814
+      },
+      {
+        "executionId": "f58c191a-9ee9-4807-90e8-0df517721411",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789900682924
+      }
+    ],
+    "14.1 Create `index.ts` re-exporting all public domain types and functions": [
+      {
+        "executionId": "f58c191a-9ee9-4807-90e8-0df517721411",
+        "chatSessionId": "sess_d09e142c-822c-486c-a545-7c19dc54d9f8",
+        "timestamp": 1789900682871
+      }
+    ],
+    "15. Final checkpoint — full test suite and domain purity check": [
+      {
+        "executionId": "a46e21ae-d754-4525-b51e-a48b24b989f2",
+        "chatSessionId": "sess_af0f4ae9-e0d9-454b-b0e5-0eb511ee9c23",
+        "timestamp": 1789900780565
+      }
+    ]
+  }
+}

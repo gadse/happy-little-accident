@@ -22,4 +22,23 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  // Domain purity: forbid runtime imports of any `dependencies` package inside src/domain/
+  // Type-only imports (erased at compile time) are explicitly allowed — Requirement 11.1
+  {
+    files: ['src/domain/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['react', 'react-dom', 'react/*', 'react-dom/*'],
+              message: 'Domain layer must not import from React packages.',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
 ])
