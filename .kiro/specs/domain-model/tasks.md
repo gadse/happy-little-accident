@@ -31,18 +31,18 @@ Implement the pure TypeScript domain model layer for **happy-little-accident** i
     - No tests needed — this is a trivial type-level utility with no invariants
     - _Requirements: (referenced in Glossary; used by application layer)_
 
-- [x] 4. `EntityId` value object (`src/domain/EntityId.ts`)
-  - [x] 4.1 Implement `EntityId` class and `makeEntityId` factory
-    - Constructor validates format `^(board|column|card)#[0-9a-f]{6}$`; throws with messages from the design error table
-    - `makeEntityId(realm, counter)` encodes counter as zero-padded 6-digit lowercase hex; throws if counter > 0xFFFFFF
-    - Expose `readonly realm`, `readonly hex`, `equals(other)`, `toString()`
+- [x] 4. Entity id value objects (`src/domain/EntityId.ts`)
+  - [x] 4.1 Implement `EntityIdBase` + `CardId`/`ColumnId`/`BoardId` classes and the `makeCardId`/`makeColumnId`/`makeBoardId` factories
+    - `EntityIdBase` is abstract, parses/validates format `^(board|column|card)#[0-9a-f]{6}$`, and exposes `get realm()`, `get hex()`, `equals(other)`, `toString()`; throws with messages from the design error table
+    - Each concrete subclass carries a distinct native-private brand field (so the id types are mutually non-assignable at compile time and runtime), has a `private constructor`, and a `static of(raw)` factory that also throws if the parsed realm does not match the subclass realm
+    - `makeCardId`/`makeColumnId`/`makeBoardId(counter)` encode the counter as zero-padded 6-digit lowercase hex; throw if the counter is negative, non-integer, or > 0xFFFFFF
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
-  - [x] 4.2 Write property tests for `EntityId` (Properties 1–4))
-    - **Property 1: EntityId serialization round-trip** — `toString()` then re-construct → `equals()` true
-    - **Property 2: EntityId counter encoding** — `makeEntityId(realm, counter).hex === counter.toString(16).padStart(6, '0')`
+  - [x] 4.2 Write property tests for the entity ids (Properties 1–4))
+    - **Property 1: EntityId serialization round-trip** — `toString()` then re-construct via the same `static of()` → `equals()` true
+    - **Property 2: EntityId counter encoding** — `makeCardId/makeColumnId/makeBoardId(counter).hex === counter.toString(16).padStart(6, '0')`
     - **Property 3: EntityId structural equality** — `a.equals(b)` iff `a.realm === b.realm && a.hex === b.hex`
-    - **Property 4: Invalid strings rejected** — any string not matching the pattern throws
-    - Also include unit tests: valid construction, error messages, realm/hex extraction
+    - **Property 4: Invalid strings rejected** — any string not matching the pattern throws; a well-formed string whose realm mismatches the subclass throws
+    - Also include unit tests: valid construction, error messages, realm/hex extraction, realm-mismatch rejection
     - File: `src/domain/__tests__/EntityId.test.ts`
     - _Requirements: 1.1–1.6_
 
@@ -107,20 +107,20 @@ Implement the pure TypeScript domain model layer for **happy-little-accident** i
 
 - [x] 10. `Card` entity (`src/domain/Card.ts`)
   - [x] 10.1 Implement `Card` class
-    - Constructor accepts `CardFields`; throws if `id.realm !== 'card'`; sets `createdAt` and `lastModifiedAt` to the provided `createdAt`
+    - Constructor accepts `CardFields`; `id` is a `CardId`, so realm `card` is guaranteed at compile time (no runtime realm check); sets `createdAt` and `lastModifiedAt` to the provided `createdAt`
     - Implement `withName`, `withDescription`, `withCategory`, `withDueDate` — each returns a new `Card` with `createdAt` from the original and `lastModifiedAt` set to the provided timestamp; do NOT expose `withCreatedAt`
     - All fields are `readonly`
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
   - [x] 10.2 Write property tests for `Card` (Properties 12–13)
     - **Property 12: Card construction timestamp invariant** — `createdAt === t && lastModifiedAt === t` for any construction timestamp `t`
     - **Property 13: Card immutable update invariant** — any `with*` call returns a new object reference with `createdAt` unchanged and `lastModifiedAt === modifiedAt`
-    - Also include unit tests: realm check on construction, `withDescription(undefined)` clears the field, each `with*` method preserves all other fields
+    - Also include unit tests: `withDescription(undefined)` clears the field, each `with*` method preserves all other fields; realm safety is enforced by the type system (the `CardId` parameter), so there is no runtime realm throw to test — optionally add a type-level (`@ts-expect-error`) check that a non-`CardId` id is rejected at compile time
     - File: `src/domain/__tests__/Card.test.ts`
     - _Requirements: 7.1–7.5_
 
 - [x] 11. `Column` entity (`src/domain/Column.ts`)
   - [x] 11.1 Implement `Column` class
-    - Constructor accepts `{ id, name, cards? }`; throws if `id.realm !== 'column'`; defaults `cards` to `[]`
+    - Constructor accepts `{ id, name, cards? }`; `id` is a `ColumnId`, so realm `column` is guaranteed at compile time (no runtime realm check); defaults `cards` to `[]`
     - Implement `withCardAt(index, card)` — throws if `index < 0 || index > cards.length`
     - Implement `withoutCard(cardId)` — throws if card not found
     - Implement `withCardsReordered(newOrder)` — throws if `newOrder` is not a permutation (same count, same IDs) of current cards
@@ -137,7 +137,7 @@ Implement the pure TypeScript domain model layer for **happy-little-accident** i
 
 - [x] 12. `Board` entity (`src/domain/Board.ts`)
   - [x] 12.1 Implement `Board` class
-    - Constructor accepts `{ id, name, createdAt, description?, columns? }`; throws if `id.realm !== 'board'`; sets `createdAt` and `lastModifiedAt` to `createdAt`; `createdAt` is never modifiable
+    - Constructor accepts `{ id, name, createdAt, description?, columns? }`; `id` is a `BoardId`, so realm `board` is guaranteed at compile time (no runtime realm check); sets `createdAt` and `lastModifiedAt` to `createdAt`; `createdAt` is never modifiable
     - Implement `withColumnAt(index, column, modifiedAt)` — throws if out of range
     - Implement `withoutColumn(columnId, modifiedAt)` — throws if not found
     - Implement `withUpdatedColumn(column, modifiedAt)` — replaces by id, updates `lastModifiedAt`
@@ -149,24 +149,24 @@ Implement the pure TypeScript domain model layer for **happy-little-accident** i
     - **Property 17: Board column insertion invariant** — valid index inserts at correct position; out-of-range throws
     - **Property 18: Board column removal invariant** — removes correct column, count decreases by 1
     - **Property 19: `lastModifiedAt` updated on all structural changes** — every update method sets `lastModifiedAt === ts`
-    - Also include unit tests: `createdAt` immutability, realm check, `withUpdatedColumn` with unknown id throws, `withDescription(undefined)` clears the field
+    - Also include unit tests: `createdAt` immutability, `withUpdatedColumn` with unknown id throws, `withDescription(undefined)` clears the field; realm safety is enforced by the `BoardId` parameter type (compile-time), so there is no runtime realm throw to test
     - File: `src/domain/__tests__/Board.test.ts`
     - _Requirements: 9.1–9.10_
 
 - [x] 13. `copyCard` domain operation (`src/domain/copyCard.ts`)
   - [x] 13.1 Implement `copyCard` function
-    - Throws if `newId.realm !== 'card'`
+    - `newId` is a `CardId`, so realm `card` is guaranteed at compile time (no runtime realm check)
     - Returns new `Card` with `id = newId`, `createdAt = pasteAt`, `lastModifiedAt = pasteAt`, and `name`, `description`, `category`, `dueDate` copied from `source` (absent fields remain absent)
     - _Requirements: 10.1–10.6_
   - [x] 13.2 Write property tests for `copyCard` (Property 20)
     - **Property 20: `copyCard` produces a correct copy** — `id.equals(newId)`, timestamps equal `pasteAt`, all data fields equal source, absent fields absent on copy
-    - Also include unit tests: wrong-realm `newId` throws, copy is a distinct object from source, optional fields are correctly omitted when absent on source
+    - Also include unit tests: copy is a distinct object from source, optional fields are correctly omitted when absent on source; realm safety is enforced by the `CardId` parameter type (compile-time), so there is no runtime wrong-realm throw to test — optionally add a type-level (`@ts-expect-error`) check that a non-`CardId` id is rejected
     - File: `src/domain/__tests__/copyCard.test.ts`
     - _Requirements: 10.1–10.6_
 
 - [x] 14. Barrel export (`src/domain/index.ts`)
   - [x] 14.1 Create `index.ts` re-exporting all public domain types and functions
-    - Export: `EntityId`, `makeEntityId`, `CardName`, `ColumnName`, `BoardName`, `CardDescription`, `BoardDescription`, `CardCategory`, `DueDate`, `Card`, `Column`, `Board`, `copyCard`, `Result`, `ok`, `err`
+    - Export: `EntityIdBase`, `CardId`, `ColumnId`, `BoardId`, `makeCardId`, `makeColumnId`, `makeBoardId`, `Realm` (type-only), `CardName`, `ColumnName`, `BoardName`, `CardDescription`, `BoardDescription`, `CardCategory`, `DueDate`, `Card`, `Column`, `Board`, `copyCard`, `Result`, `ok`, `err`
     - Verify the module compiles cleanly with `tsc --noEmit` after all previous tasks are complete
     - _Requirements: 11.1, 11.2, 11.3_
 

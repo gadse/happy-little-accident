@@ -26,7 +26,7 @@
 
 The domain model is the innermost layer of **happy-little-accident**. It is a pure TypeScript module that lives entirely inside `src/domain/` and has zero external dependencies — no React, no browser APIs, no npm packages at runtime. Every invariant the application depends on is enforced here at construction time. If an object can be constructed, it is valid.
 
-The model exposes three entity types (`Board`, `Column`, `Card`) and their supporting value objects (`EntityId`, `BoardName`, `ColumnName`, `CardName`, `BoardDescription`, `CardDescription`, `CardCategory`, `DueDate`, `Timestamp`). It also exposes a single domain operation, `copyCard`. Everything else in the application (application layer, infrastructure adapters, UI) builds on these types.
+The model exposes three entity types (`Board`, `Column`, `Card`) and their supporting value objects (the realm-branded ids `BoardId`/`ColumnId`/`CardId`, `BoardName`, `ColumnName`, `CardName`, `BoardDescription`, `CardDescription`, `CardCategory`, `DueDate`, `Timestamp`). It also exposes a single domain operation, `copyCard`. Everything else in the application (application layer, infrastructure adapters, UI) builds on these types.
 
 All mutations produce new object instances. No domain object is mutated after construction. This keeps change detection predictable for React and keeps the domain layer free of shared-state surprises.
 
@@ -44,7 +44,7 @@ The domain layer is a collection of pure TypeScript modules with no side effects
 
 ```
 src/domain/
-  EntityId.ts          — EntityId value object and factory
+  EntityId.ts          — EntityIdBase + CardId/ColumnId/BoardId value objects and per-realm factories
   CardName.ts          — CardName value object
   ColumnName.ts        — ColumnName value object
   BoardName.ts         — BoardName value object
@@ -75,7 +75,7 @@ Board  ──depends on──▶  Column  ──depends on──▶  Card
                     (EntityId, CardName, …)
 ```
 
-Value objects have no dependencies other than each other and the built-in TypeScript types. Entities depend only on value objects and other entities in the direction shown above. `copyCard` depends on `Card` and `EntityId`.
+Value objects have no dependencies other than each other and the built-in TypeScript types. Entities depend only on value objects and other entities in the direction shown above. `copyCard` depends on `Card` and `CardId`.
 
 ### Data flow (outward)
 
@@ -96,23 +96,41 @@ All value objects follow the same shape:
 - An immutable `value` property (or explicit field accessors for `DueDate`).
 - An `equals(other)` method that compares by value.
 
-#### `EntityId`
+#### Entity ids (`EntityIdBase`, `CardId`, `ColumnId`, `BoardId`)
+
+Rather than a single `EntityId` class, each realm has its own id type so the compiler — not just a runtime check — prevents passing an id of the wrong realm to an entity. A shared abstract base holds the common state and behaviour; three concrete subclasses add a distinct brand.
 
 ```typescript
-class EntityId {
-  readonly realm: 'board' | 'column' | 'card';
-  readonly hex: string; // exactly 6 lowercase hex digits
+type Realm = 'board' | 'column' | 'card';
 
-  constructor(raw: string); // throws if format is invalid
-  equals(other: EntityId): boolean;
-  toString(): string; // returns "<realm>#<hex>"
+abstract class EntityIdBase {
+  get realm(): Realm;
+  get hex(): string;              // exactly 6 lowercase hex digits
+  protected constructor(raw: string); // throws if format/realm is invalid
+
+  equals(other: EntityIdBase): boolean;
+  toString(): string;             // returns "<realm>#<hex>"
 }
 
-/** Creates an EntityId from a realm and a monotonic counter value. */
-function makeEntityId(realm: 'board' | 'column' | 'card', counter: number): EntityId;
+class CardId extends EntityIdBase {
+  static of(raw: string): CardId;   // throws unless realm is 'card'
+}
+class ColumnId extends EntityIdBase {
+  static of(raw: string): ColumnId; // throws unless realm is 'column'
+}
+class BoardId extends EntityIdBase {
+  static of(raw: string): BoardId;  // throws unless realm is 'board'
+}
+
+/** Each factory encodes a monotonic counter as a zero-padded 6-digit hex string. */
+function makeCardId(counter: number): CardId;
+function makeColumnId(counter: number): ColumnId;
+function makeBoardId(counter: number): BoardId;
 ```
 
-The `counter` passed to `makeEntityId` is a non-negative integer. The factory encodes it as a zero-padded 6-digit lowercase hex string. Counters above `0xFFFFFF` (16,777,215) would overflow the 6-digit field; the factory throws in that case (practical limit is never reached in a local single-user app).
+**Compile-time realm safety.** TypeScript treats a class that declares a native `#`-private field *nominally*: a value is only assignable to that class if it originated from it. `EntityIdBase` holds the shared `#realm`/`#hex` state, and each subclass declares its *own* distinct `#`-private brand field (`#cardBrand`, `#columnBrand`, `#boardBrand`). Because `CardId` carries `#cardBrand` and `ColumnId` carries `#columnBrand`, neither is assignable to the other even though their public shape is identical — the guarantee holds at compile time *and* at runtime. `EntityIdBase` is `abstract` and cannot be constructed directly; each subclass has a `private constructor` reached only through its `static of()` factory, which additionally throws if the parsed realm does not match the subclass's realm (defense-in-depth for untrusted input).
+
+The `counter` passed to each `make*Id` factory is a non-negative integer. The factory encodes it as a zero-padded 6-digit lowercase hex string and throws if the counter is negative, non-integer, or above `0xFFFFFF` (16,777,215), which would overflow the 6-digit field (practical limit is never reached in a local single-user app).
 
 Per-realm counters are owned by the application layer (not the domain). The domain only validates and stores IDs — it does not maintain any counter state.
 
@@ -199,7 +217,7 @@ Entities are immutable records. "Update" methods return a new instance with the 
 
 ```typescript
 interface CardFields {
-  id: EntityId;            // realm must be 'card'
+  id: CardId;
   name: CardName;
   createdAt: Timestamp;
   lastModifiedAt: Timestamp;
@@ -209,7 +227,7 @@ interface CardFields {
 }
 
 class Card {
-  readonly id: EntityId;
+  readonly id: CardId;
   readonly name: CardName;
   readonly createdAt: Timestamp;
   readonly lastModifiedAt: Timestamp;
@@ -217,7 +235,7 @@ class Card {
   readonly category: CardCategory | undefined;
   readonly dueDate: DueDate | undefined;
 
-  constructor(fields: CardFields); // throws if id.realm !== 'card'
+  constructor(fields: CardFields); // id is a CardId — realm 'card' guaranteed at compile time, no runtime check
 
   withName(name: CardName, modifiedAt: Timestamp): Card;
   withDescription(description: CardDescription | undefined, modifiedAt: Timestamp): Card;
@@ -233,11 +251,11 @@ class Card {
 
 ```typescript
 class Column {
-  readonly id: EntityId;    // realm must be 'column'
+  readonly id: ColumnId;
   readonly name: ColumnName;
   readonly cards: readonly Card[];
 
-  constructor(fields: { id: EntityId; name: ColumnName; cards?: Card[] });
+  constructor(fields: { id: ColumnId; name: ColumnName; cards?: Card[] });
 
   /** Returns a new Column with the card inserted at the given zero-based index.
    *  Throws if index < 0 or index > cards.length. */
@@ -245,7 +263,7 @@ class Column {
 
   /** Returns a new Column with the card with the given id removed.
    *  Throws if no card with that id exists. */
-  withoutCard(cardId: EntityId): Column;
+  withoutCard(cardId: CardId): Column;
 
   /** Returns a new Column with cards in the given order.
    *  Throws if the provided array is not a permutation of the current cards. */
@@ -261,7 +279,7 @@ class Column {
 
 ```typescript
 class Board {
-  readonly id: EntityId;       // realm must be 'board'
+  readonly id: BoardId;
   readonly name: BoardName;
   readonly createdAt: Timestamp;
   readonly lastModifiedAt: Timestamp;
@@ -269,7 +287,7 @@ class Board {
   readonly description: BoardDescription | undefined;
 
   constructor(fields: {
-    id: EntityId;
+    id: BoardId;
     name: BoardName;
     createdAt: Timestamp;
     description?: BoardDescription;
@@ -282,7 +300,7 @@ class Board {
 
   /** Removes the column with the given id.
    *  Throws if no column with that id exists. */
-  withoutColumn(columnId: EntityId, modifiedAt: Timestamp): Board;
+  withoutColumn(columnId: ColumnId, modifiedAt: Timestamp): Board;
 
   /** Replaces a column (identified by id) with a new Column instance.
    *  Used when a card inside the column is updated. Updates lastModifiedAt. */
@@ -300,12 +318,12 @@ class Board {
 ```typescript
 function copyCard(
   source: Card,
-  newId: EntityId,
+  newId: CardId,
   pasteAt: Timestamp
 ): Card;
 ```
 
-- Throws if `newId.realm !== 'card'`.
+- `newId` is a `CardId`, so the copy's realm is guaranteed to be `card` at compile time; a wrong-realm id cannot be passed and no runtime realm check is performed.
 - Returns a new `Card` with `id = newId`, `createdAt = pasteAt`, `lastModifiedAt = pasteAt`, and all other fields (`name`, `description`, `category`, `dueDate`) copied from `source`.
 
 ### Result Type
@@ -342,7 +360,7 @@ Examples:
 
 ```
 Card {
-  id:             EntityId  (realm = "card")
+  id:             CardId  (realm = "card")
   name:           CardName
   createdAt:      Timestamp
   lastModifiedAt: Timestamp
@@ -356,7 +374,7 @@ Card {
 
 ```
 Column {
-  id:    EntityId  (realm = "column")
+  id:    ColumnId  (realm = "column")
   name:  ColumnName
   cards: Card[]    (ordered, position = array index)
 }
@@ -366,7 +384,7 @@ Column {
 
 ```
 Board {
-  id:             EntityId  (realm = "board")
+  id:             BoardId  (realm = "board")
   name:           BoardName
   createdAt:      Timestamp
   lastModifiedAt: Timestamp
@@ -379,7 +397,7 @@ Board {
 
 | Object | Invariant |
 |--------|-----------|
-| `EntityId` | Matches `^(board\|column\|card)#[0-9a-f]{6}$` |
+| `CardId`, `ColumnId`, `BoardId` | Matches `^(board\|column\|card)#[0-9a-f]{6}$`; parsed realm must equal the subclass realm |
 | `CardName`, `ColumnName`, `BoardName` | Non-empty, non-whitespace-only, ≤ 2048 code points |
 | `CardDescription`, `BoardDescription` | ≤ 10,000 code points (empty allowed) |
 | `CardCategory` | Non-empty, non-whitespace-only, ≤ 100 code points |
@@ -401,7 +419,7 @@ Board {
 
 ### Property 1: EntityId serialization round-trip
 
-*For any* valid `EntityId`, calling `toString()` and then constructing a new `EntityId` from the resulting string produces an `EntityId` for which `equals()` returns `true` when compared to the original.
+*For any* valid entity id (`CardId`, `ColumnId`, or `BoardId`), calling `toString()` and then re-constructing an id of the same branded type (via its `static of()`) from the resulting string produces an id for which `equals()` returns `true` when compared to the original.
 
 **Validates: Requirements 1.6**
 
@@ -409,7 +427,7 @@ Board {
 
 ### Property 2: EntityId counter encoding
 
-*For any* realm (`"board"`, `"column"`, `"card"`) and any non-negative integer counter in [0, 0xFFFFFF], `makeEntityId(realm, counter).hex` equals `counter.toString(16).padStart(6, '0')`.
+*For any* non-negative integer counter in [0, 0xFFFFFF], the `.hex` of the id produced by each per-realm factory (`makeCardId`, `makeColumnId`, `makeBoardId`) equals `counter.toString(16).padStart(6, '0')`.
 
 **Validates: Requirements 1.4**
 
@@ -417,7 +435,7 @@ Board {
 
 ### Property 3: EntityId structural equality
 
-*For any* two valid `EntityId` values `a` and `b`, `a.equals(b)` returns `true` if and only if `a.realm === b.realm` and `a.hex === b.hex`.
+*For any* two valid entity-id values `a` and `b` (of any branded id type), `a.equals(b)` returns `true` if and only if `a.realm === b.realm` and `a.hex === b.hex`.
 
 **Validates: Requirements 1.5**
 
@@ -425,7 +443,7 @@ Board {
 
 ### Property 4: Invalid EntityId strings are rejected
 
-*For any* string that does not match the pattern `^(board|column|card)#[0-9a-f]{6}$`, constructing an `EntityId` from that string throws an `Error`.
+*For any* string that does not match the pattern `^(board|column|card)#[0-9a-f]{6}$`, constructing an id from that string (via `CardId.of`, `ColumnId.of`, or `BoardId.of`) throws an `Error`. Likewise, a well-formed string whose realm does not match the called subclass throws an `Error`.
 
 **Validates: Requirements 1.2**
 
@@ -553,7 +571,7 @@ Board {
 
 ### Property 20: `copyCard` produces a correct copy
 
-*For any* valid `Card` source, an `EntityId` with realm `"card"` (that differs from the source card's id), and a paste timestamp `ts`, `copyCard(source, newId, ts)` returns a `Card` where: `id.equals(newId)` is `true`, `createdAt === ts`, `lastModifiedAt === ts`, and `name`, `description`, `category`, `dueDate` are each equal to the corresponding field on the source (and absent if absent on the source).
+*For any* valid `Card` source, a `CardId` (that differs from the source card's id), and a paste timestamp `ts`, `copyCard(source, newId, ts)` returns a `Card` where: `id.equals(newId)` is `true`, `createdAt === ts`, `lastModifiedAt === ts`, and `name`, `description`, `category`, `dueDate` are each equal to the corresponding field on the source (and absent if absent on the source).
 
 **Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5**
 
@@ -576,22 +594,25 @@ The domain layer does not use `Result` types internally. It throws `Error` direc
 
 | Scenario | Throw message (suggested) |
 |----------|--------------------------|
-| `EntityId` invalid format | `"Invalid EntityId: expected '<realm>#<hex>', got '<input>'"` |
-| `EntityId` unknown realm | `"Invalid EntityId realm: '<realm>'"` |
+| Entity id invalid format | `"Invalid EntityId: expected '<realm>#<hex>', got '<raw>'"` |
+| Entity id unknown realm | `"Invalid EntityId realm: '<realm>'"` |
+| `CardId`/`ColumnId`/`BoardId` realm mismatch | `"<Type>Id must have realm '<realm>', got '<realm>'"` (e.g. `"CardId must have realm 'card', got 'board'"`) |
+| `make*Id` non-integer/negative counter | `"EntityId counter must be a non-negative integer, got <counter>"` |
+| `make*Id` counter overflow | `"EntityId counter overflow: <counter> exceeds maximum value of 16777215 (0xFFFFFF)"` |
 | Name empty or whitespace | `"<TypeName> must not be empty or whitespace-only"` |
 | Name exceeds max length | `"<TypeName> must be at most <N> code points, got <actual>"` |
 | Description exceeds max length | `"<TypeName> must be at most <N> code points, got <actual>"` |
 | `DueDate` datetime passed | `"DueDate does not accept Date objects; pass { year, month, day } instead"` |
 | `DueDate` out-of-range | `"Invalid DueDate: month <m> does not have <d> days"` |
 | `Timestamp` invalid instant | `"Invalid Timestamp: expected a valid Date or finite epoch millis"` |
-| Entity id wrong realm | `"<Entity> id must have realm '<expected>', got '<actual>'"` |
+| `Card`/`Column`/`Board` constructor wrong-realm id | *(no runtime check — the branded `CardId`/`ColumnId`/`BoardId` parameter type guarantees the realm at compile time; realm mismatch is caught earlier at the `<Type>Id.of` parsing boundary)* |
+| `copyCard` wrong-realm `newId` | *(no runtime check — `newId: CardId` guarantees realm `card` at compile time; realm mismatch is caught earlier at `CardId.of`)* |
 | `Card.withCreatedAt` called | *(no method exposed — compile-time prevention)* |
 | `Column.withCardAt` out of range | `"Card index <i> out of range [0, <n>]"` |
 | `Column.withoutCard` not found | `"Card with id '<id>' not found in column"` |
 | `Column.withCardsReordered` invalid | `"Reorder array must be a permutation of the current cards"` |
 | `Board.withColumnAt` out of range | `"Column index <i> out of range [0, <n>]"` |
 | `Board.withoutColumn` not found | `"Column with id '<id>' not found in board"` |
-| `copyCard` wrong realm | `"copyCard newId must have realm 'card', got '<realm>'"` |
 | `BoardDescription` null/undefined | `"BoardDescription value must not be null or undefined"` |
 
 ### Error propagation

@@ -29,12 +29,12 @@ This document defines requirements for the domain model layer of **happy-little-
 
 #### Acceptance Criteria
 
-1. THE Domain_Model SHALL provide an `EntityId` value object that stores an `Entity_ID` string in the form `<realm>#<hex>`, where `realm` is one of `board`, `column`, or `card`, and `hex` is exactly 6 lowercase hexadecimal characters (`0–9`, `a–f`).
-2. WHEN an `EntityId` is constructed with a string that does not match the `<realm>#<hex>` format, THE Domain_Model SHALL throw an error indicating which part of the format was violated (realm or hex).
-3. WHEN an `EntityId` is constructed with a valid string, THE Domain_Model SHALL store the value immutably such that the realm and hex parts cannot be modified after construction.
-4. THE Domain_Model SHALL provide a factory function that, given a realm and a per-realm monotonic counter, generates a new `EntityId` by encoding the next counter value as a zero-padded 6-digit lowercase hexadecimal string; the counter starts at 0 and increments by 1 on each call.
-5. THE Domain_Model SHALL expose an `equals` method on `EntityId` that returns `true` if and only if both the realm and hex parts of the two compared `EntityId` values are identical, and `false` otherwise.
-6. FOR ALL valid `EntityId` values, serialising to string then constructing a new `EntityId` from that string SHALL produce an `EntityId` for which `equals` returns `true` when compared to the original.
+1. THE Domain_Model SHALL provide a distinct, realm-branded entity-id value object per realm — `CardId`, `ColumnId`, and `BoardId` — each sharing a common abstract base (`EntityIdBase`) and each storing an `Entity_ID` string in the form `<realm>#<hex>`, where `realm` matches the subclass realm (`card`, `column`, or `board`) and `hex` is exactly 6 lowercase hexadecimal characters (`0–9`, `a–f`). Each subclass carries a distinct native-private brand field so that the id types are mutually non-assignable at both compile time and runtime (a `CardId` is not a `ColumnId`, etc.).
+2. WHEN an entity id is constructed (via `CardId.of`, `ColumnId.of`, or `BoardId.of`) with a string that does not match the `<realm>#<hex>` format, THE Domain_Model SHALL throw an error indicating which part of the format was violated (realm or hex); and WHEN the parsed realm does not match the realm expected by the called subclass, THE Domain_Model SHALL throw an error naming the expected realm.
+3. WHEN an entity id is constructed with a valid string, THE Domain_Model SHALL store the value immutably such that the realm and hex parts cannot be modified after construction.
+4. THE Domain_Model SHALL provide one factory function per realm — `makeCardId`, `makeColumnId`, and `makeBoardId` — that, given a per-realm monotonic counter, generates a new id of the matching branded type by encoding the counter value as a zero-padded 6-digit lowercase hexadecimal string; the counter starts at 0 and increments by 1 on each call, and the factory throws if the counter is negative, non-integer, or exceeds `0xFFFFFF`.
+5. THE Domain_Model SHALL expose an `equals` method (inherited from `EntityIdBase`) that returns `true` if and only if both the realm and hex parts of the two compared entity-id values are identical, and `false` otherwise.
+6. FOR ALL valid entity-id values, serialising to string then re-constructing an id of the same branded type from that string SHALL produce an id for which `equals` returns `true` when compared to the original.
 
 
 ### Requirement 2: Card Name Value Object
@@ -111,11 +111,11 @@ This document defines requirements for the domain model layer of **happy-little-
 
 #### Acceptance Criteria
 
-1. THE Domain_Model SHALL provide a `Card` entity with required fields: `id` (`EntityId` with realm `card`), `name` (`CardName`), `createdAt` (`Timestamp`, immutable after creation) and `lastModifiedAt` (`Timestamp`); both are `Timestamp` value objects (Requirement 12) so that a timestamp shared by reference cannot be mutated after construction.
+1. THE Domain_Model SHALL provide a `Card` entity with required fields: `id` (`CardId`, the realm-branded entity id for realm `card`), `name` (`CardName`), `createdAt` (`Timestamp`, immutable after creation) and `lastModifiedAt` (`Timestamp`); both are `Timestamp` value objects (Requirement 12) so that a timestamp shared by reference cannot be mutated after construction.
 2. THE Domain_Model SHALL provide optional fields on `Card`: `description` (`CardDescription`), `category` (`CardCategory`), and `dueDate` (`DueDate`).
 3. WHEN a `Card` is created with a caller-supplied creation timestamp, THE Domain_Model SHALL set both `createdAt` and `lastModifiedAt` to that same timestamp.
 4. WHEN any field on a `Card` is updated with a caller-supplied modification timestamp, THE Domain_Model SHALL return a new `Card` instance with the updated field, `lastModifiedAt` set to the provided modification timestamp, and `createdAt` unchanged from the original instance.
-5. IF an update operation attempts to modify the `createdAt` field of a `Card`, THEN THE Domain_Model SHALL throw an Error.
+5. THE Domain_Model SHALL make the `createdAt` field of a `Card` immutable after creation by exposing no update method that changes it (no `withCreatedAt`); the field cannot be modified, enforced at compile time rather than by a runtime throw.
 
 
 ### Requirement 8: Column Entity
@@ -124,7 +124,7 @@ This document defines requirements for the domain model layer of **happy-little-
 
 #### Acceptance Criteria
 
-1. THE Domain_Model SHALL provide a `Column` entity with required fields: `id` (`EntityId` with realm `column`), `name` (`ColumnName`), and an ordered array of `Card` instances (`cards`).
+1. THE Domain_Model SHALL provide a `Column` entity with required fields: `id` (`ColumnId`, the realm-branded entity id for realm `column`), `name` (`ColumnName`), and an ordered array of `Card` instances (`cards`).
 2. WHEN a `Column` is created with no cards, THE Domain_Model SHALL initialise the `cards` array as empty.
 3. WHEN a card is added to a `Column` at a valid zero-based index between 0 and the current card count (inclusive), THE Domain_Model SHALL return a new `Column` instance with the card inserted at that index and all subsequent cards shifted one position higher, without mutating the original.
 4. IF a card is added to a `Column` at an index less than 0 or greater than the current card count, THEN THE Domain_Model SHALL throw an Error indicating the position is out of range.
@@ -140,7 +140,7 @@ This document defines requirements for the domain model layer of **happy-little-
 
 #### Acceptance Criteria
 
-1. THE Domain_Model SHALL provide a `Board` entity with required fields: `id` (`EntityId` with realm `board`), `name` (`BoardName`), `createdAt` (`Timestamp`, immutable after creation), `lastModifiedAt` (`Timestamp`), and an ordered array of `Column` instances (`columns`).
+1. THE Domain_Model SHALL provide a `Board` entity with required fields: `id` (`BoardId`, the realm-branded entity id for realm `board`), `name` (`BoardName`), `createdAt` (`Timestamp`, immutable after creation), `lastModifiedAt` (`Timestamp`), and an ordered array of `Column` instances (`columns`).
 2. THE Domain_Model SHALL provide an optional `description` (`BoardDescription`) field on `Board`.
 3. WHEN a `Board` is created, THE Domain_Model SHALL set `createdAt` and `lastModifiedAt` to the same provided creation timestamp.
 4. WHEN a `Column` is added to a `Board` at a valid zero-based position index between 0 and the current column count (inclusive), THE Domain_Model SHALL return a new `Board` instance with the column inserted at that index, all subsequent columns shifted one position higher, and `lastModifiedAt` updated to the provided modification timestamp.
@@ -158,12 +158,12 @@ This document defines requirements for the domain model layer of **happy-little-
 
 #### Acceptance Criteria
 
-1. THE Domain_Model SHALL provide a `copyCard` operation that takes a source `Card`, a new `EntityId` with realm `card`, and a paste timestamp, and returns a new `Card`.
-2. WHEN `copyCard` is called, THE Domain_Model SHALL assign the provided new `EntityId` to the returned card.
+1. THE Domain_Model SHALL provide a `copyCard` operation that takes a source `Card`, a new `CardId` (the realm-branded entity id for realm `card`), and a paste timestamp, and returns a new `Card`. Because `newId` is typed as a `CardId`, its realm is guaranteed to be `card` at compile time; a wrong-realm id cannot be passed, so no runtime realm check is performed.
+2. WHEN `copyCard` is called, THE Domain_Model SHALL assign the provided new `CardId` to the returned card.
 3. WHEN `copyCard` is called, THE Domain_Model SHALL set both `createdAt` and `lastModifiedAt` on the returned card to the provided paste timestamp.
 4. WHEN `copyCard` is called, THE Domain_Model SHALL copy `name`, `description`, `category`, and `dueDate` from the source card to the returned card unchanged; if any optional field is absent on the source card, it SHALL be absent on the returned card.
 5. THE Domain_Model SHALL ensure that the `id` of the returned card from `copyCard` is not equal to the `id` of the source card.
-6. IF `copyCard` is called with an `EntityId` whose realm is not `card`, THEN THE Domain_Model SHALL throw an Error.
+6. THE Domain_Model SHALL accept a `CardId` as the `newId` parameter of `copyCard`, so the copy's realm is guaranteed to be `card` at compile time; a wrong-realm id cannot be passed and no runtime realm check is needed.
 
 
 ### Requirement 11: Domain Model Purity
