@@ -92,8 +92,8 @@ The domain does not know about any other layer. It exposes a typed public API an
 
 All value objects follow the same shape:
 
-- A constructor/factory that throws `Error` if invariants are violated.
-- An immutable `value` property (or explicit field accessors for `DueDate`).
+- A private constructor plus a static factory (`of`) that throws `Error` if invariants are violated.
+- An immutable `value` accessor (or explicit field accessors for `DueDate`).
 - An `equals(other)` method that compares by value.
 
 #### Entity ids (`EntityIdBase`, `CardId`, `ColumnId`, `BoardId`)
@@ -140,8 +140,9 @@ All three are structurally identical:
 
 ```typescript
 class CardName {
-  readonly value: string;
-  constructor(value: string); // throws if empty, whitespace-only, or > 2048 code points
+  private constructor(value: string); // throws if empty, whitespace-only, or > 2048 code points
+  static of(value: string): CardName;
+  get value(): string;
   equals(other: CardName): boolean;
 }
 // ColumnName and BoardName follow the same shape
@@ -153,8 +154,9 @@ class CardName {
 
 ```typescript
 class CardDescription {
-  readonly value: string;
-  constructor(value: string); // throws if > 10,000 code points; empty string is valid
+  private constructor(value: string); // throws if > 10,000 code points; empty string is valid
+  static of(value: string): CardDescription;
+  get value(): string;
   equals(other: CardDescription): boolean;
 }
 // BoardDescription follows the same shape; also throws on null/undefined
@@ -166,8 +168,9 @@ class CardDescription {
 
 ```typescript
 class CardCategory {
-  readonly value: string;
-  constructor(value: string); // throws if empty, whitespace-only, or > 100 code points
+  private constructor(value: string); // throws if empty, whitespace-only, or > 100 code points
+  static of(value: string): CardCategory;
+  get value(): string;
   equals(other: CardCategory): boolean;
 }
 ```
@@ -176,18 +179,21 @@ class CardCategory {
 
 ```typescript
 class DueDate {
-  readonly year: number;
-  readonly month: number; // 1–12
-  readonly day: number;   // 1–31, validated against the actual calendar
+  /** Accepts only a plain `{ year, month, day }` object. Rejects `Date`
+   *  instances and non-objects at runtime, and throws for non-integer fields,
+   *  an out-of-range month, or a day outside the calendar range. */
+  private constructor(input: { year: number; month: number; day: number });
+  static of(input: { year: number; month: number; day: number }): DueDate;
 
-  /** Accepts only a plain `{ year, month, day }` object. Throws for datetimes,
-   *  out-of-range values, or non-date primitives. */
-  constructor(input: { year: number; month: number; day: number });
+  get year(): number;
+  get month(): number; // 1–12
+  get day(): number;   // 1–31, validated against the actual calendar
+
   equals(other: DueDate): boolean;
 }
 ```
 
-`DueDate` rejects anything that carries a time component — if a `Date` object is passed, the constructor throws because `Date` always has a time component. The factory only accepts a plain object with `year`, `month`, and `day` integer fields.
+`DueDate` accepts **only** a plain `{ year, month, day }` object. Even though the parameter type is that object shape, the constructor also guards at runtime: a `Date` instance is rejected (it carries a time component), and `null` or any non-object input is rejected as well. Each of `year`, `month`, and `day` must be an integer; `month` must be in [1, 12]; and `day` must be in the valid range for the given month and year.
 
 Calendar validation uses a lookup table for month lengths (accounting for leap years via the proleptic Gregorian calendar rule: divisible by 4, except centuries unless also divisible by 400).
 
@@ -213,10 +219,24 @@ This closes the one remaining shared-mutable-state hole in the entities: `create
 
 Entities are immutable records. "Update" methods return a new instance with the changed field; the original is unchanged. TypeScript `readonly` modifiers on all fields enforce this at compile time.
 
+Entities are compared by **identity**: `entity.equals(other)` returns `true` iff `entity.id.equals(other.id)`. Two entity instances with the same id are therefore considered equal even if their other fields differ. This is in deliberate contrast to value objects, which compare by value.
+
 #### `Card`
 
 ```typescript
-interface CardFields {
+// Public — accepted by Card.create. No lastModifiedAt: the factory sets it.
+interface CardCreateFields {
+  id: CardId;
+  name: CardName;
+  createdAt: Timestamp;
+  description?: CardDescription;
+  category?: CardCategory;
+  dueDate?: DueDate;
+}
+
+// Internal — accepted by the private constructor and the private restore
+// factory. Adds an explicit lastModifiedAt so updaters can set it verbatim.
+interface CardRestoreFields {
   id: CardId;
   name: CardName;
   createdAt: Timestamp;
@@ -235,7 +255,13 @@ class Card {
   readonly category: CardCategory | undefined;
   readonly dueDate: DueDate | undefined;
 
-  constructor(fields: CardFields); // id is a CardId — realm 'card' guaranteed at compile time, no runtime check
+  // Private — all construction goes through the factories below.
+  private constructor(fields: CardRestoreFields); // id is a CardId — realm 'card' guaranteed at compile time, no runtime check
+
+  // Public factory: sets both createdAt and lastModifiedAt to fields.createdAt.
+  static create(fields: CardCreateFields): Card;
+
+  equals(other: Card): boolean; // identity-based: equal when ids are equal
 
   withName(name: CardName, modifiedAt: Timestamp): Card;
   withDescription(description: CardDescription | undefined, modifiedAt: Timestamp): Card;
@@ -245,17 +271,30 @@ class Card {
 }
 ```
 
-`Card` constructor sets `createdAt` and `lastModifiedAt` to the same `createdAt` value provided in `fields`. The `with*` methods return a new `Card` with `createdAt` copied from the original and `lastModifiedAt` set to the provided `modifiedAt` timestamp.
+`Card.create` sets `createdAt` and `lastModifiedAt` to the same `createdAt` value provided in `fields`. A private `static restore(fields: CardRestoreFields)` factory rebuilds a `Card` with timestamps set verbatim; it is an internal detail (not public API) used by the `with*` methods, which return a new `Card` with `createdAt` copied from the original and `lastModifiedAt` set to the provided `modifiedAt` timestamp.
 
 #### `Column`
 
 ```typescript
+// Public — accepted by Column.create. cards defaults to [] when omitted.
+interface ColumnCreateFields {
+  id: ColumnId;
+  name: ColumnName;
+  cards?: Card[];
+}
+
 class Column {
   readonly id: ColumnId;
   readonly name: ColumnName;
   readonly cards: readonly Card[];
 
-  constructor(fields: { id: ColumnId; name: ColumnName; cards?: Card[] });
+  // Private — all construction goes through the factory below.
+  private constructor(fields: ColumnCreateFields);
+
+  // Public factory: cards defaults to [] when omitted.
+  static create(fields: ColumnCreateFields): Column;
+
+  equals(other: Column): boolean; // identity-based: equal when ids are equal
 
   /** Returns a new Column with the card inserted at the given zero-based index.
    *  Throws if index < 0 or index > cards.length. */
@@ -278,6 +317,15 @@ class Column {
 #### `Board`
 
 ```typescript
+// Public — accepted by Board.create. columns defaults to [] when omitted.
+interface BoardCreateFields {
+  id: BoardId;
+  name: BoardName;
+  createdAt: Timestamp;
+  description?: BoardDescription;
+  columns?: Column[];
+}
+
 class Board {
   readonly id: BoardId;
   readonly name: BoardName;
@@ -286,13 +334,16 @@ class Board {
   readonly columns: readonly Column[];
   readonly description: BoardDescription | undefined;
 
-  constructor(fields: {
-    id: BoardId;
-    name: BoardName;
-    createdAt: Timestamp;
-    description?: BoardDescription;
-    columns?: Column[];
-  });
+  // Private — accepts an internal field shape with an explicit lastModifiedAt
+  // so internal rebuilds set it independently of createdAt. All construction
+  // goes through the factory below.
+  private constructor(fields: /* internal: BoardCreateFields + lastModifiedAt */);
+
+  // Public factory: sets both createdAt and lastModifiedAt to fields.createdAt;
+  // columns defaults to [] when omitted.
+  static create(fields: BoardCreateFields): Board;
+
+  equals(other: Board): boolean; // identity-based: equal when ids are equal
 
   /** Inserts a column at the given zero-based index.
    *  Throws if index < 0 or index > columns.length. */
@@ -311,7 +362,7 @@ class Board {
 }
 ```
 
-`Board` constructor sets both `createdAt` and `lastModifiedAt` to the provided `createdAt` value. No `Board` method can change `createdAt`.
+`Board.create` sets both `createdAt` and `lastModifiedAt` to the provided `createdAt` value. No `Board` method can change `createdAt`.
 
 ### Domain Operation: `copyCard`
 
@@ -324,7 +375,7 @@ function copyCard(
 ```
 
 - `newId` is a `CardId`, so the copy's realm is guaranteed to be `card` at compile time; a wrong-realm id cannot be passed and no runtime realm check is performed.
-- Returns a new `Card` with `id = newId`, `createdAt = pasteAt`, `lastModifiedAt = pasteAt`, and all other fields (`name`, `description`, `category`, `dueDate`) copied from `source`.
+- Builds the copy via `Card.create(...)` (not the private constructor), yielding a new `Card` with `id = newId`, `createdAt = pasteAt`, `lastModifiedAt = pasteAt`, and all other fields (`name`, `description`, `category`, `dueDate`) copied from `source`.
 
 ### Result Type
 

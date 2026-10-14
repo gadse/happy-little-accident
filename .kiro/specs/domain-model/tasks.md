@@ -166,7 +166,7 @@ Implement the pure TypeScript domain model layer for **happy-little-accident** i
 
 - [x] 14. Barrel export (`src/domain/index.ts`)
   - [x] 14.1 Create `index.ts` re-exporting all public domain types and functions
-    - Export: `EntityIdBase`, `CardId`, `ColumnId`, `BoardId`, `makeCardId`, `makeColumnId`, `makeBoardId`, `Realm` (type-only), `CardName`, `ColumnName`, `BoardName`, `CardDescription`, `BoardDescription`, `CardCategory`, `DueDate`, `Card`, `Column`, `Board`, `copyCard`, `Result`, `ok`, `err`
+    - Export: `EntityIdBase`, `CardId`, `ColumnId`, `BoardId`, `makeCardId`, `makeColumnId`, `makeBoardId`, `Realm` (type-only), `CardName`, `ColumnName`, `BoardName`, `CardDescription`, `BoardDescription`, `CardCategory`, `DueDate`, `Timestamp`, `Card`, `Column`, `Board`, `copyCard`, `Result`, `ok`, `err`
     - Verify the module compiles cleanly with `tsc --noEmit` after all previous tasks are complete
     - _Requirements: 11.1, 11.2, 11.3_
 
