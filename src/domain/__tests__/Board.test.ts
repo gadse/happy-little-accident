@@ -200,6 +200,20 @@ describe('Board — construction', () => {
     });
     expect(board.description?.value).toBe('a board');
   });
+
+  it('accepts a board whose columns all have distinct ids', () => {
+    const board = boardOf([makeColumn(1, 'a'), makeColumn(2, 'b')]);
+    expect(board.columns.length).toBe(2);
+  });
+
+  it('throws when two columns share the same id', () => {
+    const dup = makeColumnId(5);
+    const a = makeColumn(5, 'a');
+    const b = makeColumn(5, 'b');
+    expect(() => boardOf([a, b])).toThrow(
+      `Board cannot contain duplicate column ids: '${dup.toString()}'`,
+    );
+  });
 });
 
 describe('Board — createdAt immutability', () => {
@@ -247,6 +261,14 @@ describe('Board — withColumnAt', () => {
       'Column index 2 out of range [0, 1]',
     );
   });
+
+  it('throws when inserting a column whose id is already present', () => {
+    const board = boardOf([makeColumn(7, 'existing')]);
+    const duplicate = makeColumn(7, 'duplicate');
+    expect(() => board.withColumnAt(0, duplicate, Timestamp.of(new Date()))).toThrow(
+      `Board cannot contain duplicate column ids: '${duplicate.id.toString()}'`,
+    );
+  });
 });
 
 describe('Board — withoutColumn', () => {
@@ -278,6 +300,8 @@ describe('Board — withUpdatedColumn', () => {
     expect(result.columns[0].name.value).toBe('In Progress');
     expect(result.columns[0]).toBe(updated);
     expect(result.columns[1].name.value).toBe('Done');
+    // Replacement, not duplication: the column count is unchanged.
+    expect(result.columns.length).toBe(2);
   });
 
   it('throws when no column with the given id exists', () => {

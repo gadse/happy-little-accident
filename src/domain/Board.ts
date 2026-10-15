@@ -50,6 +50,9 @@ interface BoardConstructFields {
  * - Via {@link Board.create}, `createdAt` and `lastModifiedAt` are both set to
  *   the provided `createdAt` (Requirement 9.2).
  * - `columns` defaults to `[]` when omitted.
+ * - `columns` contains no two entries sharing a {@link ColumnId} (compared via
+ *   `equals`). Enforced in the constructor, so every construction path
+ *   (including the `rebuild`-based updaters) rejects duplicates.
  */
 export class Board {
   readonly id: BoardId;
@@ -62,12 +65,34 @@ export class Board {
   private constructor(fields: BoardConstructFields) {
     // No runtime realm check: `fields.id` is a BoardId, so the realm is
     // guaranteed to be 'board' at compile time.
+    const columns = fields.columns ?? [];
+    Board.assertNoDuplicateColumnIds(columns);
     this.id = fields.id;
     this.name = fields.name;
     this.createdAt = fields.createdAt;
     this.lastModifiedAt = fields.lastModifiedAt;
-    this.columns = fields.columns ?? [];
+    this.columns = columns;
     this.description = fields.description;
+  }
+
+  /**
+   * Throws if `columns` contains two entries sharing a {@link ColumnId}
+   * (compared via `equals`). The single chokepoint for the no-duplicate-ids
+   * invariant; every construction path routes through the constructor, which
+   * calls this.
+   */
+  private static assertNoDuplicateColumnIds(
+    columns: readonly Column[],
+  ): void {
+    const seen: ColumnId[] = [];
+    for (const column of columns) {
+      if (seen.some((id) => id.equals(column.id))) {
+        throw new Error(
+          `Board cannot contain duplicate column ids: '${column.id.toString()}'`,
+        );
+      }
+      seen.push(column.id);
+    }
   }
 
   /**
@@ -101,12 +126,18 @@ export class Board {
    * `lastModifiedAt` is set to `modifiedAt`; `createdAt` and all other fields
    * are preserved. The original `Board` is unchanged.
    *
-   * Throws if `index < 0 || index > columns.length`.
+   * Throws if `index < 0 || index > columns.length`, or if a column sharing
+   * `column`'s id is already present.
    */
   withColumnAt(index: number, column: Column, modifiedAt: Timestamp): Board {
     const n = this.columns.length;
     if (index < 0 || index > n) {
       throw new Error(`Column index ${index} out of range [0, ${n}]`);
+    }
+    if (this.columns.some((c) => c.id.equals(column.id))) {
+      throw new Error(
+        `Board cannot contain duplicate column ids: '${column.id.toString()}'`,
+      );
     }
     const columns = [
       ...this.columns.slice(0, index),

@@ -27,6 +27,9 @@ export interface ColumnCreateFields {
  * - `id` is a {@link ColumnId} (realm `'column'` guaranteed by the type
  *   system).
  * - `cards` defaults to `[]` when omitted (Requirement 8.2).
+ * - `cards` contains no two entries sharing a {@link CardId} (compared via
+ *   `equals`). Enforced in the constructor, so every construction path
+ *   (including the `withX` rebuilds) rejects duplicates.
  */
 export class Column {
   readonly id: ColumnId;
@@ -36,9 +39,28 @@ export class Column {
   private constructor(fields: ColumnCreateFields) {
     // No runtime realm check: `fields.id` is a ColumnId, so the realm is
     // guaranteed to be 'column' at compile time.
+    const cards = fields.cards ?? [];
+    Column.assertNoDuplicateCardIds(cards);
     this.id = fields.id;
     this.name = fields.name;
-    this.cards = fields.cards ?? [];
+    this.cards = cards;
+  }
+
+  /**
+   * Throws if `cards` contains two entries sharing a {@link CardId} (compared
+   * via `equals`). The single chokepoint for the no-duplicate-ids invariant;
+   * every construction path routes through the constructor, which calls this.
+   */
+  private static assertNoDuplicateCardIds(cards: readonly Card[]): void {
+    const seen: CardId[] = [];
+    for (const card of cards) {
+      if (seen.some((id) => id.equals(card.id))) {
+        throw new Error(
+          `Column cannot contain duplicate card ids: '${card.id.toString()}'`,
+        );
+      }
+      seen.push(card.id);
+    }
   }
 
   /**
@@ -62,12 +84,18 @@ export class Column {
    * `index`; all cards at or after `index` shift one position higher. The
    * original `Column` is unchanged.
    *
-   * Throws if `index < 0 || index > cards.length`.
+   * Throws if `index < 0 || index > cards.length`, or if a card sharing
+   * `card`'s id is already present.
    */
   withCardAt(index: number, card: Card): Column {
     const n = this.cards.length;
     if (index < 0 || index > n) {
       throw new Error(`Card index ${index} out of range [0, ${n}]`);
+    }
+    if (this.cards.some((c) => c.id.equals(card.id))) {
+      throw new Error(
+        `Column cannot contain duplicate card ids: '${card.id.toString()}'`,
+      );
     }
     const cards = [
       ...this.cards.slice(0, index),
@@ -117,6 +145,9 @@ export class Column {
         'Reorder array must be a permutation of the current cards',
       );
     }
+    // A true permutation of distinct-id cards is itself distinct-id, but
+    // assert explicitly so a repeated entry can never slip through.
+    Column.assertNoDuplicateCardIds(newOrder);
     return Column.create({ id: this.id, name: this.name, cards: [...newOrder] });
   }
 

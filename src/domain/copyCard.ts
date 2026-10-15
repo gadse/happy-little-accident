@@ -12,13 +12,13 @@ import { Card } from './Card';
  *
  * Absent optional fields on `source` remain absent on the copy — they are
  * omitted via conditional spread rather than being set to `undefined`
- * (Requirement 10.5), mirroring the construction pattern in {@link Card}.
+ * (Requirement 10.4), mirroring the construction pattern in {@link Card}.
  *
  * The returned card is always a distinct object from `source`
- * (Requirement 10.6).
+ * (Requirement 10.5).
  *
  * `newId` is a {@link CardId}, so the compiler guarantees the copy's realm is
- * `'card'` (Requirement 10.4) — no runtime realm check is needed.
+ * `'card'` (Requirement 10.6) — no runtime realm check is needed.
  *
  * @param source - the card to copy from.
  * @param newId - identity for the copy.

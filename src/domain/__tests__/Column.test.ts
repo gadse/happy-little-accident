@@ -169,6 +169,20 @@ describe('Column — construction', () => {
       name: ColumnName.of('Backlog'),
     });
   });
+
+  it('accepts a column whose cards all have distinct ids', () => {
+    const column = columnOf([makeCard(1, 'a'), makeCard(2, 'b')]);
+    expect(column.cards.length).toBe(2);
+  });
+
+  it('throws when two cards share the same id', () => {
+    const dup = makeCardId(5);
+    const a = makeCard(5, 'a');
+    const b = makeCard(5, 'b');
+    expect(() => columnOf([a, b])).toThrow(
+      `Column cannot contain duplicate card ids: '${dup.toString()}'`,
+    );
+  });
 });
 
 describe('Column — withCardAt', () => {
@@ -217,6 +231,15 @@ describe('Column — withCardAt', () => {
     const column = columnOf([makeCard(1)]);
     expect(() => column.withCardAt(2, makeCard(2))).toThrow(
       'Card index 2 out of range [0, 1]',
+    );
+  });
+
+  it('throws when inserting a card whose id is already present', () => {
+    const existing = makeCard(7, 'existing');
+    const column = columnOf([existing]);
+    const duplicate = makeCard(7, 'duplicate');
+    expect(() => column.withCardAt(0, duplicate)).toThrow(
+      `Column cannot contain duplicate card ids: '${duplicate.id.toString()}'`,
     );
   });
 });
